@@ -44,7 +44,6 @@ Your Skills → What You Can Build → Careers This Opens
 Hardware + Software Embedded Systems
 Integration Project
 
-text
 
 **Universal scope:** Ages 8-80, all domains (STEM, arts, professional, creative).
 
@@ -136,7 +135,6 @@ pnpm prisma migrate dev
 Start development server
 pnpm dev
 
-text
 
 Open http://localhost:3000
 
@@ -168,7 +166,6 @@ PathFinder/
 ├── public/ # Static assets
 └── docs/ # Documentation
 
-text
 
 ---
 
