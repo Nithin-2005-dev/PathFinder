@@ -11,8 +11,8 @@
 ### Week 1 (Oct 29 - Nov 4)
 - [x] GitHub repository created
 - [x] Next.js project initialized
-- [ ] Database schema designed
-- [ ] Development environment setup
+- [x] Database schema designed
+- [x] Development environment setup
 
 ### Week 2 (Nov 5-11)
 - [ ] Prisma migrations

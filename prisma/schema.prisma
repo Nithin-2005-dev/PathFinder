@@ -1,0 +1,587 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * Enums (kept from your original)
+ */
+enum TeamStatus {
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIAL
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  REFUNDED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  ONE_TIME
+  REFUND
+}
+
+enum FileType {
+  IMAGE
+  DOCUMENT
+  CODE
+  OTHER
+}
+
+enum ProjectSkillType {
+  REQUIRED
+  OPTIONAL
+}
+
+enum PathwaySkillType {
+  REQUIRED
+  PREFERRED
+  ADVANTAGEOUS
+}
+
+enum PeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum UserActionType {
+  LOGIN
+  COMPLETE_PROJECT
+  ADD_SKILL
+  REVIEW_PROJECT
+  SHARE
+  JOIN_TEAM
+  LEAVE_TEAM
+  OTHER
+}
+
+enum TeamMemberStatus {
+  ACTIVE
+  LEFT
+  INVITED
+  REMOVED
+}
+
+enum TeamMemberRole {
+  LEAD
+  CONTRIBUTOR
+  REVIEWER
+  OBSERVER
+}
+
+/**
+ * Models
+ */
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  currentStreak Int       @default(0)
+  maxStreak     Int       @default(0)
+  lastActiveAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+
+  userSkills          UserSkill[]
+  completedProjects   UserProject[]
+  createdProjects     Project[]             @relation("CreatedProjects")
+  achievements        UserAchievement[]
+  activitySummaries   UserActivitySummary[]
+  teams               TeamMember[]
+  messages            TeamMessage[]
+  pathways            UserPathway[]
+  bookmarks           UserBookmark[]
+  socialShares        SocialShareLog[] // single relation to SocialShareLog
+  roles               UserRole[]
+  subscriptions       UserSubscription[]
+  paymentTransactions PaymentTransaction[]
+  xpHistory           UserXPHistory[]
+  auditLogs           AuditLog[]            @relation("UserAuditLogs")
+  projectReviews      ProjectReview[]
+  uploadedFiles       ProjectFile[]
+  userScopedRoles     UserScopedRole[]
+}
+
+model Skill {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  domain      String?
+  createdAt   DateTime  @default(now())
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  users         UserSkill[]
+  projects      ProjectSkill[]
+  requiredFor   SkillPrerequisite[] @relation("PreReqFor")
+  prerequisites SkillPrerequisite[] @relation("Requires")
+  pathwaySkills PathwaySkill[]
+  translations  SkillTranslation[]
+  bookmarks     UserBookmark[]
+}
+
+model UserSkill {
+  userId  String
+  skillId String
+  level   Int    @default(0)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@index([skillId])
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creatorId   String?
+  createdByAI Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  // Relation: One project can appear in multiple pathway-project links
+  pathwayProjects PathwayProject[] @relation("ProjectToPathwayProject")
+
+  // Creator relation (opposite of User.createdProjects)
+  creator User? @relation("CreatedProjects", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  // other relations
+  requiredSkills ProjectSkill[]
+  completedBy    UserProject[]
+  reviews        ProjectReview[]
+  teams          ProjectTeam[]
+  files          ProjectFile[]
+  translations   ProjectTranslation[]
+  bookmarks      UserBookmark[]
+}
+
+model ProjectSkill {
+  projectId String
+  skillId   String
+  type      ProjectSkillType @default(REQUIRED)
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill     Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, skillId])
+  @@index([skillId])
+}
+
+model UserProject {
+  userId      String
+  projectId   String
+  completedAt DateTime? // <-- no default(now()); make nullable and set when completed
+  rating      Int?
+  feedback    String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+}
+
+model ProjectReview {
+  id         String   @id @default(uuid())
+  projectId  String
+  reviewerId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewer User    @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([reviewerId])
+}
+
+model Achievement {
+  id          String  @id @default(uuid())
+  name        String
+  icon        String?
+  description String
+  rarity      String
+
+  unlockedBy UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+}
+
+model UserActivitySummary {
+  id         String         @id @default(uuid())
+  userId     String
+  actionType UserActionType
+  count      Int            @default(0)
+  period     PeriodType
+  lastXP     Int            @default(0)
+  updatedAt  DateTime       @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, actionType, period])
+  @@index([userId])
+}
+
+model GamificationRule {
+  id          String         @id @default(uuid())
+  actionType  UserActionType
+  xpAward     Int
+  levelNeeded Int            @default(1)
+  description String?
+  active      Boolean        @default(true)
+}
+
+model UserXPHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  delta     Int
+  reason    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Pathway {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  // Relation: One pathway can have many pathway-project links
+  pathwayProjects PathwayProject[] @relation("PathwayToPathwayProject")
+
+  pathwaySkills PathwaySkill[]
+  trackedBy     UserPathway[]
+  bookmarks     UserBookmark[]
+}
+
+model PathwaySkill {
+  pathwayId  String
+  skillId    String
+  type       PathwaySkillType @default(REQUIRED)
+  importance Float            @default(0.5)
+  pathway    Pathway          @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  skill      Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([pathwayId, skillId])
+  @@index([skillId])
+}
+
+model UserPathway {
+  userId          String
+  pathwayId       String
+  progressPercent Int      @default(0)
+  startedAt       DateTime @default(now())
+  isActive        Boolean  @default(true)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pathway Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pathwayId])
+}
+
+model PathwayProject {
+  id        String @id @default(uuid())
+  pathwayId String
+  projectId String
+
+  // Relation to Pathway
+  pathway Pathway @relation("PathwayToPathwayProject", fields: [pathwayId], references: [id], onDelete: Cascade)
+
+  // Relation to Project
+  project Project @relation("ProjectToPathwayProject", fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([pathwayId])
+  @@index([projectId])
+}
+
+model SkillPrerequisite {
+  fromSkillId String
+  toSkillId   String
+
+  fromSkill Skill @relation("Requires", fields: [fromSkillId], references: [id], onDelete: Cascade)
+  toSkill   Skill @relation("PreReqFor", fields: [toSkillId], references: [id], onDelete: Cascade)
+
+  @@id([fromSkillId, toSkillId])
+  @@index([toSkillId])
+}
+
+model ProjectTeam {
+  id          String             @id @default(uuid())
+  projectId   String
+  name        String?
+  status      TeamStatus         @default(IN_PROGRESS)
+  percentDone Int                @default(0)
+  startedAt   DateTime           @default(now())
+  completedAt DateTime?
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  milestones  ProjectMilestone[]
+  messages    TeamMessage[]
+  isDeleted   Boolean            @default(false)
+  deletedAt   DateTime?
+
+  @@index([projectId])
+}
+
+model TeamMember {
+  id                  String           @id @default(uuid())
+  teamId              String
+  userId              String
+  joinedAt            DateTime         @default(now())
+  role                TeamMemberRole   @default(CONTRIBUTOR)
+  status              TeamMemberStatus @default(ACTIVE)
+  contributionPercent Int?
+
+  team ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([userId])
+}
+
+model ProjectMilestone {
+  id          String          @id @default(uuid())
+  teamId      String
+  name        String
+  description String?
+  status      MilestoneStatus @default(TODO)
+  dueDate     DateTime?
+  completedAt DateTime?
+  assignedTo  String?
+  team        ProjectTeam     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+}
+
+model TeamMessage {
+  id       String      @id @default(uuid())
+  teamId   String
+  senderId String
+  content  String
+  sentAt   DateTime    @default(now())
+  team     ProjectTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  sender   User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([senderId])
+}
+
+model ProjectFile {
+  id         String   @id @default(uuid())
+  projectId  String
+  uploaderId String
+  url        String
+  filename   String
+  fileType   FileType
+  version    Int      @default(1)
+  uploadedAt DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([uploaderId])
+}
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  name         String
+  priceCents   Int
+  durationDays Int
+  description  String?
+  createdAt    DateTime @default(now())
+
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                 String             @id @default(uuid())
+  userId             String
+  subscriptionPlanId String
+  startDate          DateTime
+  endDate            DateTime
+  status             SubscriptionStatus @default(ACTIVE)
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                SubscriptionPlan     @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+  paymentTransactions PaymentTransaction[]
+
+  @@index([userId])
+  @@index([subscriptionPlanId])
+}
+
+model PaymentTransaction {
+  id             String        @id @default(uuid())
+  userId         String
+  subscriptionId String? // nullable, refers to UserSubscription.id
+  amountCents    Int
+  currency       String        @default("INR")
+  provider       String
+  status         PaymentStatus @default(PENDING)
+  transactedAt   DateTime      @default(now())
+  providerId     String?
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+}
+
+model SkillTranslation {
+  id          String @id @default(uuid())
+  skillId     String
+  language    String
+  name        String
+  description String
+  skill       Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, language])
+  @@index([skillId])
+}
+
+model ProjectTranslation {
+  id          String  @id @default(uuid())
+  projectId   String
+  language    String
+  title       String
+  description String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, language])
+  @@index([projectId])
+}
+
+model UserBookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  projectId String?
+  pathwayId String?
+  skillId   String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pathway Pathway? @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  skill   Skill?   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([pathwayId])
+  @@index([skillId])
+}
+
+model SocialShareLog {
+  id       String   @id @default(uuid())
+  userId   String
+  platform String
+  itemType String
+  itemId   String
+  sharedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([itemType, itemId])
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  users       UserRole[]
+  scopedRoles ScopedRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model ScopedRole {
+  id              String           @id @default(uuid())
+  name            String
+  baseRoleId      String?
+  baseRole        Role?            @relation(fields: [baseRoleId], references: [id], onDelete: SetNull)
+  scopeType       String
+  scopeId         String?
+  userScopedRoles UserScopedRole[]
+}
+
+model UserScopedRole {
+  id           String     @id @default(uuid())
+  userId       String
+  scopedRoleId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopedRole   ScopedRole @relation(fields: [scopedRoleId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scopedRoleId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
