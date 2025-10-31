@@ -1,0 +1,23 @@
+model SkillTranslation {
+  id          String @id @default(uuid())
+  skillId     String
+  language    String
+  name        String
+  description String
+  skill       Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, language])
+  @@index([skillId])
+}
+
+model ProjectTranslation {
+  id          String  @id @default(uuid())
+  projectId   String
+  language    String
+  title       String
+  description String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, language])
+  @@index([projectId])
+}

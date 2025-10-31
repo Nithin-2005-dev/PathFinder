@@ -1,0 +1,65 @@
+model Pathway {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  pathwayProjects PathwayProject[] @relation("PathwayToPathwayProject")
+
+  pathwaySkills PathwaySkill[]
+  trackedBy     UserPathway[]
+  bookmarks     UserBookmark[]
+}
+
+model PathwaySkill {
+  pathwayId  String
+  skillId    String
+  type       PathwaySkillType @default(REQUIRED)
+  importance Float            @default(0.5)
+  pathway    Pathway          @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  skill      Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([pathwayId, skillId])
+  @@index([skillId])
+}
+
+model UserPathway {
+  userId          String
+  pathwayId       String
+  progressPercent Int      @default(0)
+  startedAt       DateTime @default(now())
+  isActive        Boolean  @default(true)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pathway Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pathwayId])
+}
+
+model PathwayProject {
+  id        String @id @default(uuid())
+  pathwayId String
+  projectId String
+
+  pathway Pathway @relation("PathwayToPathwayProject", fields: [pathwayId], references: [id], onDelete: Cascade)
+  project Project @relation("ProjectToPathwayProject", fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([pathwayId])
+  @@index([projectId])
+}
+
+model SkillPrerequisite {
+  fromSkillId String
+  toSkillId   String
+
+  fromSkill Skill @relation("Requires", fields: [fromSkillId], references: [id], onDelete: Cascade)
+  toSkill   Skill @relation("PreReqFor", fields: [toSkillId], references: [id], onDelete: Cascade)
+
+  @@id([fromSkillId, toSkillId])
+  @@index([toSkillId])
+}

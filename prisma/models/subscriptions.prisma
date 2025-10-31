@@ -1,0 +1,44 @@
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  name         String
+  priceCents   Int
+  durationDays Int
+  description  String?
+  createdAt    DateTime @default(now())
+
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                 String             @id @default(uuid())
+  userId             String
+  subscriptionPlanId String
+  startDate          DateTime
+  endDate            DateTime
+  status             SubscriptionStatus @default(ACTIVE)
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                SubscriptionPlan     @relation(fields: [subscriptionPlanId], references: [id], onDelete: Cascade)
+  paymentTransactions PaymentTransaction[]
+
+  @@index([userId])
+  @@index([subscriptionPlanId])
+}
+
+model PaymentTransaction {
+  id             String        @id @default(uuid())
+  userId         String
+  subscriptionId String? 
+  amountCents    Int
+  currency       String        @default("INR")
+  provider       String
+  status         PaymentStatus @default(PENDING)
+  transactedAt   DateTime      @default(now())
+  providerId     String?
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+}

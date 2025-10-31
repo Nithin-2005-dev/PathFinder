@@ -1,0 +1,33 @@
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  currentStreak Int       @default(0)
+  maxStreak     Int       @default(0)
+  lastActiveAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+
+  userSkills          UserSkill[]
+  completedProjects   UserProject[]
+  createdProjects     Project[]             @relation("CreatedProjects")
+  achievements        UserAchievement[]
+  activitySummaries   UserActivitySummary[]
+  teams               TeamMember[]
+  messages            TeamMessage[]
+  pathways            UserPathway[]
+  bookmarks           UserBookmark[]
+  socialShares        SocialShareLog[]
+  roles               UserRole[]
+  subscriptions       UserSubscription[]
+  paymentTransactions PaymentTransaction[]
+  xpHistory           UserXPHistory[]
+  auditLogs           AuditLog[]            @relation("UserAuditLogs")
+  projectReviews      ProjectReview[]
+  uploadedFiles       ProjectFile[]
+  userScopedRoles     UserScopedRole[]
+}

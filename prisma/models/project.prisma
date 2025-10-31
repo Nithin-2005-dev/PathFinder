@@ -1,0 +1,79 @@
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creatorId   String?
+  createdByAI Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  pathwayProjects PathwayProject[] @relation("ProjectToPathwayProject")
+  creator         User? @relation("CreatedProjects", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  requiredSkills ProjectSkill[]
+  completedBy    UserProject[]
+  reviews        ProjectReview[]
+  teams          ProjectTeam[]
+  files          ProjectFile[]
+  translations   ProjectTranslation[]
+  bookmarks      UserBookmark[]
+}
+
+model ProjectSkill {
+  projectId String
+  skillId   String
+  type      ProjectSkillType @default(REQUIRED)
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill     Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, skillId])
+  @@index([skillId])
+}
+
+model UserProject {
+  userId      String
+  projectId   String
+  completedAt DateTime?
+  rating      Int?
+  feedback    String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+}
+
+model ProjectReview {
+  id         String   @id @default(uuid())
+  projectId  String
+  reviewerId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewer User    @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([reviewerId])
+}
+
+model ProjectFile {
+  id         String   @id @default(uuid())
+  projectId  String
+  uploaderId String
+  url        String
+  filename   String
+  fileType   FileType
+  version    Int      @default(1)
+  uploadedAt DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([uploaderId])
+}

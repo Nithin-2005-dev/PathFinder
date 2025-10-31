@@ -1,0 +1,81 @@
+enum TeamStatus {
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIAL
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  REFUNDED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  ONE_TIME
+  REFUND
+}
+
+enum FileType {
+  IMAGE
+  DOCUMENT
+  CODE
+  OTHER
+}
+
+enum ProjectSkillType {
+  REQUIRED
+  OPTIONAL
+}
+
+enum PathwaySkillType {
+  REQUIRED
+  PREFERRED
+  ADVANTAGEOUS
+}
+
+enum PeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum UserActionType {
+  LOGIN
+  COMPLETE_PROJECT
+  ADD_SKILL
+  REVIEW_PROJECT
+  SHARE
+  JOIN_TEAM
+  LEAVE_TEAM
+  OTHER
+}
+
+enum TeamMemberStatus {
+  ACTIVE
+  LEFT
+  INVITED
+  REMOVED
+}
+
+enum TeamMemberRole {
+  LEAD
+  CONTRIBUTOR
+  REVIEWER
+  OBSERVER
+}

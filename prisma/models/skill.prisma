@@ -1,0 +1,29 @@
+model Skill {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  domain      String?
+  createdAt   DateTime  @default(now())
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  users         UserSkill[]
+  projects      ProjectSkill[]
+  requiredFor   SkillPrerequisite[] @relation("PreReqFor")
+  prerequisites SkillPrerequisite[] @relation("Requires")
+  pathwaySkills PathwaySkill[]
+  translations  SkillTranslation[]
+  bookmarks     UserBookmark[]
+}
+
+model UserSkill {
+  userId  String
+  skillId String
+  level   Int    @default(0)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@index([skillId])
+}

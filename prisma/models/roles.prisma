@@ -1,0 +1,37 @@
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  users       UserRole[]
+  scopedRoles ScopedRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model ScopedRole {
+  id              String           @id @default(uuid())
+  name            String
+  baseRoleId      String?
+  baseRole        Role?            @relation(fields: [baseRoleId], references: [id], onDelete: SetNull)
+  scopeType       String
+  scopeId         String?
+  userScopedRoles UserScopedRole[]
+}
+
+model UserScopedRole {
+  id           String     @id @default(uuid())
+  userId       String
+  scopedRoleId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopedRole   ScopedRole @relation(fields: [scopedRoleId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scopedRoleId])
+}

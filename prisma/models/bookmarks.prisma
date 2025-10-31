@@ -1,0 +1,32 @@
+model UserBookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  projectId String?
+  pathwayId String?
+  skillId   String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pathway Pathway? @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  skill   Skill?   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([pathwayId])
+  @@index([skillId])
+}
+
+model SocialShareLog {
+  id       String   @id @default(uuid())
+  userId   String
+  platform String
+  itemType String
+  itemId   String
+  sharedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([itemType, itemId])
+}
